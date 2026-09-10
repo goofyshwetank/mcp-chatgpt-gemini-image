@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "chatgpt-image": {
+      "command": "node",
+      "args": [
+        "C:/FULL/PATH/TO/THIS/REPO/chatgpt-image-mcp/index.mjs"
+      ],
+      "env": {
+        "IMAGE_OUTPUT_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/chatgpt-image-output",
+        "CHATGPT_PROFILE_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/chatgpt-browser-profile",
+        "CHATGPT_HEADLESS": "false"
+      }
+    },
+    "gemini-image": {
+      "command": "node",
+      "args": [
+        "C:/FULL/PATH/TO/THIS/REPO/gemini-image-mcp/index.mjs"
+      ],
+      "env": {
+        "IMAGE_OUTPUT_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/gemini-image-output",
+        "GEMINI_PROFILE_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/gemini-browser-profile",
+        "GEMINI_HEADLESS": "false"
+      }
+    }
+  }
+}

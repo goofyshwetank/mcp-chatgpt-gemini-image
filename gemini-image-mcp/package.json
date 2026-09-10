@@ -1,0 +1,19 @@
+{
+  "name": "gemini-image-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "gemini-image-mcp": "./index.mjs"
+  },
+  "scripts": {
+    "check": "node --check index.mjs && node --check remove-watermark.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@pilio/gemini-watermark-remover": "^1.0.43",
+    "playwright": "^1.52.0",
+    "sharp": "^0.35.4",
+    "zod": "^3.25.28"
+  }
+}
