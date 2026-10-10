@@ -2,17 +2,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { chromium } from "playwright";
+import { chromium } from "playwright-extra";
+import stealthPlugin from "puppeteer-extra-plugin-stealth";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+
+chromium.use(stealthPlugin());
 
 const OUTPUT_DIR =
   process.env.IMAGE_OUTPUT_DIR ||
   path.join(os.homedir(), ".browser-image-mcp", "chatgpt-image-output");
 const PROFILE_DIR =
   process.env.CHATGPT_PROFILE_DIR ||
-  path.join(os.homedir(), ".browser-image-mcp", "chatgpt-browser-profile");
+  path.join(os.homedir(), ".cursor", "chatgpt-profile-v2");
 const URL = "https://chatgpt.com/";
 const IMG_SEL =
   'img[alt*="Generated"], img[src*="oaidalle"], img[src*="dalle"], [data-testid="conversation-turn"] img';
@@ -34,9 +37,12 @@ async function getPage() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   await fs.mkdir(PROFILE_DIR, { recursive: true });
   const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
-    headless: process.env.CHATGPT_HEADLESS === "true",
+    headless: false,
     viewport: { width: 1400, height: 900 },
-    args: ["--disable-blink-features=AutomationControlled"],
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--no-sandbox"
+    ]
   });
   page = ctx.pages()[0] || (await ctx.newPage());
   return page;
@@ -46,6 +52,10 @@ async function findComposer(p) {
   for (const loc of [
     p.getByTestId("prompt-textarea"),
     p.locator("#prompt-textarea"),
+    p.locator('div[contenteditable="true"]'),
+    p.locator('textarea[placeholder*="message" i]'),
+    p.locator('textarea[placeholder*="ask" i]'),
+    p.locator('div[id*="prompt"]'),
   ]) {
     if ((await loc.count()) > 0 && (await loc.first().isVisible())) return loc.first();
   }
@@ -113,12 +123,22 @@ server.tool(
     try {
       const p = await getPage();
       await p.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-      await p.waitForTimeout(2500);
-      const loggedIn = Boolean(await findComposer(p));
+      
+      let loggedIn = Boolean(await findComposer(p));
+      if (!loggedIn) {
+        // Wait up to 30s in case Cloudflare or page hydration is finishing
+        for (let i = 0; i < 12; i++) {
+          await p.waitForTimeout(2500);
+          loggedIn = Boolean(await findComposer(p));
+          if (loggedIn) break;
+        }
+      }
+
       return ok({
         ok: loggedIn,
         loggedIn,
         url: p.url(),
+        title: await p.title().catch(() => ""),
         profileDir: PROFILE_DIR,
         message: loggedIn
           ? "Logged in."
@@ -143,8 +163,17 @@ server.tool(
       await p.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
       await p.waitForTimeout(2500);
 
-      if (!(await findComposer(p))) {
-        return fail("Login required. Sign in in the opened browser, then retry.", {
+      let composer = await findComposer(p);
+      if (!composer) {
+        for (let i = 0; i < 6; i++) {
+          await p.waitForTimeout(2500);
+          composer = await findComposer(p);
+          if (composer) break;
+        }
+      }
+
+      if (!composer) {
+        return fail("Login required or bot check blocked. Check the browser window.", {
           needsLogin: true,
           profileDir: PROFILE_DIR,
         });

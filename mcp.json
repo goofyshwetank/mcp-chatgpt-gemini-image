@@ -21,6 +21,13 @@
         "GEMINI_PROFILE_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/gemini-browser-profile",
         "GEMINI_HEADLESS": "false"
       }
+    },
+    "image-compression": {
+      "command": "npx",
+      "args": ["-y", "@inhiblab-core/mcp-image-compression"],
+      "env": {
+        "IMAGE_COMPRESSION_DOWNLOAD_DIR": "C:/FULL/PATH/TO/HOME/.browser-image-mcp/compressed-output"
+      }
     }
   }
 }
